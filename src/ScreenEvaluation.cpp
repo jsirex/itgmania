@@ -29,6 +29,7 @@
 #include "CommonMetrics.h"
 #include "ScoreKeeperNormal.h"
 #include "InputEventPlus.h"
+#include "InputFilter.h"
 
 #include <cmath>
 #include <cstddef>
@@ -729,7 +730,7 @@ bool ScreenEvaluation::Input( const InputEventPlus &input )
 	if( IsTransitioning() )
 		return false;
 
-	if (input.MenuI == GAME_BUTTON_RESTART && input.type == IET_FIRST_PRESS &&
+	if (input.MenuI == GAME_BUTTON_RESTART &&
 		GAMESTATE->IsEventMode() && !GAMESTATE->IsCourseMode())
 	{
 		return MenuRestart(input);
@@ -808,7 +809,18 @@ bool ScreenEvaluation::MenuRestart( const InputEventPlus &input )
 		return false;
 	}
 
-	SCREENMAN->GetTopScreen()->SetNextScreenName("ScreenGameplay");
+	float sHeld = INPUTFILTER->GetSecsHeld(input.DeviceI);
+
+	if (sHeld < 1.0f && input.type != IET_RELEASE) {
+		return false;
+	}
+
+	if (sHeld >= 1.0f) {
+		SCREENMAN->GetTopScreen()->SetNextScreenName("ScreenPlayerOptions");
+	} else {
+		SCREENMAN->GetTopScreen()->SetNextScreenName("ScreenGameplay");
+	}
+
 	StartTransitioningScreen( SM_GoToNextScreen );
 	return true;
 }

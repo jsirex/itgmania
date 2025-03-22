@@ -61,6 +61,7 @@
 #include "Profile.h" // for replay data stuff
 #include "RageDisplay.h"
 #include "GameplayHelpers.h"
+#include "InputFilter.h"
 
 #include <cmath>
 #include <cstddef>
@@ -860,7 +861,18 @@ bool ScreenGameplay::MenuRestart( const InputEventPlus &input )
 		return false;
 	}
 
-	SCREENMAN->GetTopScreen()->SetPrevScreenName("ScreenGameplay");
+	float sHeld = INPUTFILTER->GetSecsHeld(input.DeviceI);
+
+	if (sHeld < 1.0f && input.type != IET_RELEASE) {
+		return false;
+	}
+
+	if (sHeld >= 1.0f) {
+		SCREENMAN->GetTopScreen()->SetPrevScreenName("ScreenPlayerOptions");
+	} else {
+		SCREENMAN->GetTopScreen()->SetPrevScreenName("ScreenGameplay");
+	}
+
 	BeginBackingOutFromGameplay();
 	return true;
 }
@@ -921,7 +933,7 @@ void ScreenGameplay::InitSongQueues()
 			const PlayerOptions &p = pi->GetPlayerState()->m_PlayerOptions.GetCurrent();
 
 			if (p.m_fNoAttack == 0 && p.m_fRandAttack == 0 &&
-			    pSteps->m_Attacks.size() > 0 )
+				pSteps->m_Attacks.size() > 0 )
 			{
 				pi->m_asModifiersQueue.push_back( pSteps->m_Attacks );
 			}
@@ -1011,7 +1023,7 @@ void ScreenGameplay::SetupSong( int iSongIndex )
 		pi->GetPlayerState()->m_fLastDrawnBeat = -100;
 
 		Steps *pSteps = pi->m_vpStepsQueue[iSongIndex];
- 		GAMESTATE->m_pCurSteps[ pi->GetStepsAndTrailIndex() ].Set( pSteps );
+		GAMESTATE->m_pCurSteps[ pi->GetStepsAndTrailIndex() ].Set( pSteps );
 
 		/* Load new NoteData into Player. Do this before
 		 * RebuildPlayerOptionsFromActiveAttacks or else transform mods will get
@@ -2379,7 +2391,7 @@ bool ScreenGameplay::Input( const InputEventPlus &input )
 		return false;
 	}
 
-	if (input.MenuI == GAME_BUTTON_RESTART && input.type == IET_FIRST_PRESS &&
+	if (input.MenuI == GAME_BUTTON_RESTART &&
 		GAMESTATE->IsEventMode() && !GAMESTATE->IsCourseMode())
 	{
 		return MenuRestart(input);
